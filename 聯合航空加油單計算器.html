@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聯合航空加油單計算</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "PingFang TC", "Helvetica Neue", Arial, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 15px;
+            background-color: #f5f5f5;
+            color: #333;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        .title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 15px;
+            background-color: #e6f2ff;
+        }
+        .section-title {
+            background-color: #f0f8ff;
+            font-weight: bold;
+            padding: 10px;
+        }
+        .input-cell {
+            background-color: #ffffcc;
+        }
+        .formula-cell {
+            background-color: #e6ffe6;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            border: 1px solid #ccc;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .note {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+        .left-align {
+            text-align: left;
+        }
+        .tolerance-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                font-size: 13px;
+            }
+            th, td {
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <table>
+            <tr>
+                <td colspan="8" class="title">聯合航空加油單</td>
+            </tr>
+            <tr>
+                <td colspan="8" class="section-title">FUEL DISTRIBUTION (LBS)</td>
+            </tr>
+            <tr>
+                <td>TANK</td>
+                <td>BEFORE</td>
+                <td>DESIRED</td>
+                <td>AFTER</td>
+                <td colspan="4" class="note">備註</td>
+            </tr>
+            <tr>
+                <td>L WING</td>
+                <td class="input-cell">
+                    <input type="number" id="lwing-before" min="0" step="1">
+                </td>
+                <td class="formula-cell" id="lwing-desired">電報會印</td>
+                <td class="input-cell">
+                    <input type="number" id="lwing-after" min="0" step="1">
+                </td>
+                <td colspan="4" class="note">加完油實際多少寫多少</td>
+            </tr>
+            <tr>
+                <td>CENTER</td>
+                <td class="input-cell">
+                    <input type="number" id="center-before" min="0" step="1">
+                </td>
+                <td class="formula-cell" id="center-desired">電報會印</td>
+                <td class="input-cell">
+                    <input type="number" id="center-after" min="0" step="1">
+                </td>
+                <td colspan="4"></td>
+            </tr>
+            <tr>
+                <td>R WING</td>
+                <td class="input-cell">
+                    <input type="number" id="rwing-before" min="0" step="1">
+                </td>
+                <td class="formula-cell" id="rwing-desired">電報會印</td>
+                <td class="input-cell">
+                    <input type="number" id="rwing-after" min="0" step="1">
+                </td>
+                <td colspan="4"></td>
+            </tr>
+            <tr>
+                <td>TOTAL</td>
+                <td class="formula-cell" id="before-total">0</td>
+                <td></td>
+                <td class="formula-cell" id="after-total">0</td>
+                <td colspan="4" class="note">不要輸入(有公式)</td>
+            </tr>
+            <tr>
+                <td colspan="8" class="section-title">計劃油量計算</td>
+            </tr>
+            <tr>
+                <td>PLANNED GATE FUEL</td>
+                <td class="input-cell">
+                    <input type="number" id="planned-fuel" min="0" step="1">
+                </td>
+                <td colspan="6" class="note">填電報需求油量</td>
+            </tr>
+            <tr>
+                <td>SUBTRACT BEFORE FUEL TOTAL</td>
+                <td class="formula-cell" id="subtract-before">0</td>
+                <td colspan="6" class="note">不要輸入(有公式)</td>
+            </tr>
+            <tr>
+                <td>EQUALS POUNDS TO ADD/REMOVE</td>
+                <td class="formula-cell" id="pounds-to-add">0</td>
+                <td colspan="6" class="note">不要輸入(有公式)</td>
+            </tr>
+            <tr>
+                <td>DIVIDED BY DENSITY</td>
+                <td class="input-cell">
+                    <input type="number" id="density" min="0" step="0.001">
+                </td>
+                <td colspan="6" class="note">填電報密度</td>
+            </tr>
+            <tr>
+                <td>CALCULATED GALLONS TO ADD /REMOVE</td>
+                <td class="formula-cell" id="calculated-gallons">0</td>
+                <td class="formula-cell" id="rounded-gallons">0</td>
+                <td colspan="5" class="note">不要輸入(有公式)</td>
+            </tr>
+            <tr>
+                <td colspan="8" class="section-title">實際加油量計算</td>
+            </tr>
+            <tr>
+                <td>ACTUAL LITERS ADDED</td>
+                <td class="input-cell">
+                    <input type="number" id="actual-liters" min="0" step="1">
+                </td>
+                <td colspan="6" class="note">加完油後油單顯示的LITTERS</td>
+            </tr>
+            <tr>
+                <td>ACTUAL GALS ADDED</td>
+                <td class="formula-cell" id="liters-to-gals">0</td>
+                <td class="formula-cell" id="rounded-actual-gals">0</td>
+                <td colspan="5"></td>
+            </tr>
+            <tr>
+                <td>SUBTRACT FUEL GALLONS ADDED</td>
+                <td class="formula-cell" id="subtract-gallons">0</td>
+                <td colspan="6" class="note">不要輸入(有公式)</td>
+            </tr>
+            <tr>
+                <td>EQUALS</td>
+                <td class="formula-cell" id="equals">0</td>
+                <td>TOLERANCE</td>
+                <td class="formula-cell" id="tolerance">0</td>
+                <td colspan="4" class="note">前面算出來的看是正數還負數</td>
+            </tr>
+            <tr>
+                <td colspan="8" class="note">於油單勾選 正 75 / 負 75 GALLONS</td>
+            </tr>
+            <tr>
+                <td>CALC GALS - TOL( 75 ) =</td>
+                <td class="formula-cell" id="calc-gals-minus">0</td>
+                <td>GALS *3.78541=</td>
+                <td class="formula-cell" id="gals-minus-liters">0</td>
+                <td class="formula-cell" id="rounded-minus-liters">0</td>
+                <td>MIN LITERS TO BE ADDED</td>
+                <td colspan="3"></td>
+            </tr>
+            <tr>
+                <td>CALC GALS - TOL( 75 ) =</td>
+                <td class="formula-cell" id="calc-gals-plus">0</td>
+                <td>GALS *3.78541=</td>
+                <td class="formula-cell" id="gals-plus-liters">0</td>
+                <td class="formula-cell" id="rounded-plus-liters">0</td>
+                <td>MAX LITERS TO BE ADDED</td>
+                <td colspan="3"></td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        const inputs = {
+            lwingBefore: document.getElementById('lwing-before'),
+            lwingAfter: document.getElementById('lwing-after'),
+            centerBefore: document.getElementById('center-before'),
+            centerAfter: document.getElementById('center-after'),
+            rwingBefore: document.getElementById('rwing-before'),
+            rwingAfter: document.getElementById('rwing-after'),
+            plannedFuel: document.getElementById('planned-fuel'),
+            density: document.getElementById('density'),
+            actualLiters: document.getElementById('actual-liters')
+        };
+        
+        const results = {
+            beforeTotal: document.getElementById('before-total'),
+            afterTotal: document.getElementById('after-total'),
+            subtractBefore: document.getElementById('subtract-before'),
+            poundsToAdd: document.getElementById('pounds-to-add'),
+            calculatedGallons: document.getElementById('calculated-gallons'),
+            roundedGallons: document.getElementById('rounded-gallons'),
+            subtractGallons: document.getElementById('subtract-gallons'),
+            equals: document.getElementById('equals'),
+            tolerance: document.getElementById('tolerance'),
+            calcGalsMinus: document.getElementById('calc-gals-minus'),
+            galsMinusLiters: document.getElementById('gals-minus-liters'),
+            roundedMinusLiters: document.getElementById('rounded-minus-liters'),
+            calcGalsPlus: document.getElementById('calc-gals-plus'),
+            galsPlusLiters: document.getElementById('gals-plus-liters'),
+            roundedPlusLiters: document.getElementById('rounded-plus-liters'),
+            litersToGals: document.getElementById('liters-to-gals'),
+            roundedActualGals: document.getElementById('rounded-actual-gals')
+        };
+        
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('input', calculateAll);
+        });
+        
+        function calculateAll() {
+            const lwingBefore = parseFloat(inputs.lwingBefore.value) || 0;
+            const centerBefore = parseFloat(inputs.centerBefore.value) || 0;
+            const rwingBefore = parseFloat(inputs.rwingBefore.value) || 0;
+            const lwingAfter = parseFloat(inputs.lwingAfter.value) || 0;
+            const centerAfter = parseFloat(inputs.centerAfter.value) || 0;
+            const rwingAfter = parseFloat(inputs.rwingAfter.value) || 0;
+            const plannedFuel = parseFloat(inputs.plannedFuel.value) || 0;
+            const density = parseFloat(inputs.density.value) || 1;
+            const actualLiters = parseFloat(inputs.actualLiters.value) || 0;
+            
+            const beforeTotal = lwingBefore + centerBefore + rwingBefore;
+            const afterTotal = lwingAfter + centerAfter + rwingAfter;
+            const poundsToAdd = plannedFuel - beforeTotal;
+            const calculatedGallons = density !== 0 ? poundsToAdd / density : 0;
+            const roundedGallons = Math.round(calculatedGallons);
+            const litersToGals = actualLiters / 3.78541;
+            const roundedActualGals = Math.round(litersToGals);
+            const equals = roundedActualGals - roundedGallons;
+            const tolerance = equals > 0 ? "+75" : "-75";
+            const calcGalsMinus = roundedGallons - 75;
+            const galsMinusLiters = calcGalsMinus * 3.78541;
+            const roundedMinusLiters = Math.round(galsMinusLiters);
+            const calcGalsPlus = roundedGallons + 75;
+            const galsPlusLiters = calcGalsPlus * 3.78541;
+            const roundedPlusLiters = Math.round(galsPlusLiters);
+            
+            results.beforeTotal.textContent = beforeTotal.toLocaleString();
+            results.afterTotal.textContent = afterTotal.toLocaleString();
+            results.subtractBefore.textContent = beforeTotal.toLocaleString();
+            results.poundsToAdd.textContent = poundsToAdd.toLocaleString();
+            results.calculatedGallons.textContent = calculatedGallons.toFixed(2);
+            results.roundedGallons.textContent = roundedGallons.toLocaleString();
+            results.subtractGallons.textContent = actualLiters.toLocaleString();
+            results.equals.textContent = equals.toLocaleString();
+            results.tolerance.textContent = tolerance;
+            results.calcGalsMinus.textContent = calcGalsMinus.toLocaleString();
+            results.galsMinusLiters.textContent = galsMinusLiters.toFixed(2);
+            results.roundedMinusLiters.textContent = roundedMinusLiters.toLocaleString();
+            results.calcGalsPlus.textContent = calcGalsPlus.toLocaleString();
+            results.galsPlusLiters.textContent = galsPlusLiters.toFixed(2);
+            results.roundedPlusLiters.textContent = roundedPlusLiters.toLocaleString();
+            results.litersToGals.textContent = litersToGals.toFixed(2);
+            results.roundedActualGals.textContent = roundedActualGals.toLocaleString();
+        }
+        
+        calculateAll();
+    </script>
+</body>
+</html>
